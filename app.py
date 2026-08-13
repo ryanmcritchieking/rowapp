@@ -96,3 +96,21 @@ ctk.CTkLabel(
     text="0 km",
     font=ctk.CTkFont(size=30, weight="bold")
 ).pack()
+
+
+#this is pretty much the same but for how many sessions 
+
+sessions_card = ctk.CTkFrame(cards, height=140)
+sessions_card.pack(side="left", fill="both", expand=True, padx=10)
+
+ctk.CTkLabel(
+    sessions_card,
+    text="SESSIONS",
+    font=ctk.CTkFont(size=13)
+).pack(pady=(25, 5))
+
+ctk.CTkLabel(
+    sessions_card,
+    text="0",
+    font=ctk.CTkFont(size=30, weight="bold")
+).pack()
