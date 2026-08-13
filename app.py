@@ -149,3 +149,8 @@ ctk.CTkLabel(
     text="No training sessions recorded yet.",
     font=ctk.CTkFont(size=15)
 ).pack(anchor="w", padx=25)
+
+
+#this keeps it all rinning
+
+app.mainloop()
