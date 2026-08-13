@@ -35,3 +35,4 @@ for button in buttons:
         anchor="w"
     )
     nav_button.pack(fill="x", padx=15, pady=4)
+    
