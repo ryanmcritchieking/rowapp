@@ -132,3 +132,20 @@ ctk.CTkLabel(
     text="Not set",
     font=ctk.CTkFont(size=24, weight="bold")
 ).pack()
+
+#this is the part that shws recent traning
+
+recent = ctk.CTkFrame(main)
+recent.pack(fill="both", expand=True, padx=40, pady=30)
+
+ctk.CTkLabel(
+    recent,
+    text="Recent Training",
+    font=ctk.CTkFont(size=21, weight="bold")
+).pack(anchor="w", padx=25, pady=(20, 10))
+
+ctk.CTkLabel(
+    recent,
+    text="No training sessions recorded yet.",
+    font=ctk.CTkFont(size=15)
+).pack(anchor="w", padx=25)
