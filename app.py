@@ -52,3 +52,24 @@ for button in buttons:
         anchor="w"
     )
     nav_button.pack(fill="x", padx=15, pady=4)
+
+
+
+
+main = ctk.CTkFrame(app, corner_radius=0)
+main.pack(side="right", fill="both", expand=True)
+
+welcome = ctk.CTkLabel(
+    main,
+    text="Welcome to Rowing Performance",
+    font=ctk.CTkFont(size=30, weight="bold")
+)
+welcome.pack(anchor="w", padx=40, pady=(40, 5))
+
+subtitle = ctk.CTkLabel(
+    main,
+    text="Track your training, performance and progress.",
+    font=ctk.CTkFont(size=16)
+)
+subtitle.pack(anchor="w", padx=40, pady=(0, 30))
+
