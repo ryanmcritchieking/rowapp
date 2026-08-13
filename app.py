@@ -114,3 +114,21 @@ ctk.CTkLabel(
     text="0",
     font=ctk.CTkFont(size=30, weight="bold")
 ).pack()
+
+
+#this is ames but for you goal you have set
+
+goal_card = ctk.CTkFrame(cards, height=140)
+goal_card.pack(side="left", fill="both", expand=True, padx=10)
+
+ctk.CTkLabel(
+    goal_card,
+    text="CURRENT GOAL",
+    font=ctk.CTkFont(size=13)
+).pack(pady=(25, 5))
+
+ctk.CTkLabel(
+    goal_card,
+    text="Not set",
+    font=ctk.CTkFont(size=24, weight="bold")
+).pack()
