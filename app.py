@@ -73,3 +73,26 @@ subtitle = ctk.CTkLabel(
 )
 subtitle.pack(anchor="w", padx=40, pady=(0, 30))
 
+
+
+
+
+#this is were the kms rowed for week card
+cards = ctk.CTkFrame(main, fg_color="transparent")
+cards.pack(fill="x", padx=30)
+
+# Weekly distance
+distance_card = ctk.CTkFrame(cards, height=140)
+distance_card.pack(side="left", fill="both", expand=True, padx=10)
+
+ctk.CTkLabel(
+    distance_card,
+    text="WEEKLY DISTANCE",
+    font=ctk.CTkFont(size=13)
+).pack(pady=(25, 5))
+
+ctk.CTkLabel(
+    distance_card,
+    text="0 km",
+    font=ctk.CTkFont(size=30, weight="bold")
+).pack()
