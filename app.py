@@ -24,6 +24,23 @@ buttons= [
 ]
 
 
+sidebar = ctk.CTkFrame(app, width=220, corner_radius=0)
+sidebar.pack(side="left", fill="y")
+sidebar.pack_propagate(False)
+
+title = ctk.CTkLabel(
+    sidebar,
+    text="ROWING\nPERFORMANCE",
+    font=ctk.CTkFont(size=24, weight="bold")
+)
+
+
+
+
+
+
+
+
 for button in buttons:
     nav_button = ctk.CTkButton(
         sidebar,
@@ -35,4 +52,3 @@ for button in buttons:
         anchor="w"
     )
     nav_button.pack(fill="x", padx=15, pady=4)
-    
