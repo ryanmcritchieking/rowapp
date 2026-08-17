@@ -278,3 +278,183 @@ def home():
                 text=text,
                 font=ctk.CTkFont(size=14)
             ).pack(anchor="w", padx=25, pady=5)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ---------------- TRAINING ----------------
+
+def training():
+    clear_page()
+
+    page_title(
+        "Training Log",
+        "Record a training session"
+    )
+
+    frame = ctk.CTkScrollableFrame(content)
+    frame.pack(fill="both", expand=True, padx=40, pady=10)
+
+    ctk.CTkLabel(
+        frame,
+        text="Session type"
+    ).pack(anchor="w", pady=(10, 3))
+
+    session_type = ctk.CTkComboBox(
+        frame,
+        values=["Water", "Erg", "Gym", "Running", "Cross Training"],
+        width=350
+    )
+    session_type.pack(anchor="w", pady=(0, 15))
+    session_type.set("Water")
+
+    ctk.CTkLabel(
+        frame,
+        text="Distance (km)"
+    ).pack(anchor="w", pady=(5, 3))
+
+    distance = ctk.CTkEntry(
+        frame,
+        width=350,
+        placeholder_text="Example: 10"
+    )
+    distance.pack(anchor="w", pady=(0, 15))
+
+    ctk.CTkLabel(
+        frame,
+        text="Time"
+    ).pack(anchor="w", pady=(5, 3))
+
+    time_entry = ctk.CTkEntry(
+        frame,
+        width=350,
+        placeholder_text="Example: 40:30"
+    )
+    time_entry.pack(anchor="w", pady=(0, 15))
+
+    ctk.CTkLabel(
+        frame,
+        text="Average split"
+    ).pack(anchor="w", pady=(5, 3))
+
+    split = ctk.CTkEntry(
+        frame,
+        width=350,
+        placeholder_text="Example: 2:05"
+    )
+    split.pack(anchor="w", pady=(0, 15))
+
+    ctk.CTkLabel(
+        frame,
+        text="Stroke rate"
+    ).pack(anchor="w", pady=(5, 3))
+
+    stroke_rate = ctk.CTkEntry(
+        frame,
+        width=350,
+        placeholder_text="Example: 24"
+    )
+    stroke_rate.pack(anchor="w", pady=(0, 15))
+
+    ctk.CTkLabel(
+        frame,
+        text="Heart rate"
+    ).pack(anchor="w", pady=(5, 3))
+
+    heart_rate = ctk.CTkEntry(
+        frame,
+        width=350,
+        placeholder_text="Example: 150"
+    )
+    heart_rate.pack(anchor="w", pady=(0, 15))
+
+    ctk.CTkLabel(
+        frame,
+        text="Boat class"
+    ).pack(anchor="w", pady=(5, 3))
+
+    boat_class = ctk.CTkEntry(
+        frame,
+        width=350,
+        placeholder_text="Example: U17 1x"
+    )
+    boat_class.pack(anchor="w", pady=(0, 15))
+
+    ctk.CTkLabel(
+        frame,
+        text="Notes"
+    ).pack(anchor="w", pady=(5, 3))
+
+    notes = ctk.CTkTextbox(
+        frame,
+        width=500,
+        height=120
+    )
+    notes.pack(anchor="w", pady=(0, 20))
+
+    # Tide information is mainly for water sessions
+    ctk.CTkLabel(
+        frame,
+        text="Tide / current"
+    ).pack(anchor="w", pady=(5, 3))
+
+    tide = ctk.CTkEntry(
+        frame,
+        width=350,
+        placeholder_text="Example: +0.4 m/s"
+    )
+    tide.pack(anchor="w", pady=(0, 20))
+
+    def save_training():
+        try:
+            km = float(distance.get())
+        except ValueError:
+            message("Enter a number for distance.")
+            return
+
+        notes_text = notes.get("1.0", "end").strip()
+
+        cursor.execute("""
+        INSERT INTO training
+        (date, session_type, distance, time, split,
+         stroke_rate, heart_rate, boat_class, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            datetime.now().strftime("%Y-%m-%d"),
+            session_type.get(),
+            km,
+            time_entry.get(),
+            split.get(),
+            stroke_rate.get() or 0,
+            heart_rate.get() or 0,
+            boat_class.get(),
+            notes_text
+        ))
+
+        db.commit()
+
+        message("Training saved!")
+        home()
+
+    ctk.CTkButton(
+        frame,
+        text="Save Training",
+        width=250,
+        height=45,
+        command=save_training
+    ).pack(anchor="w", pady=10)
