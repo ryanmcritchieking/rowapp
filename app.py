@@ -153,3 +153,128 @@ def message(text):
         text="OK",
         command=popup.destroy
     ).pack()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ---------------- HOME ----------------
+
+def home():
+    clear_page()
+
+    page_title(
+        "Rowing Performance",
+        "Your training overview"
+    )
+
+    # Get some numbers from the database
+    cursor.execute("SELECT COUNT(*), COALESCE(SUM(distance), 0) FROM training")
+    result = cursor.fetchone()
+
+    sessions = result[0]
+    total_distance = result[1]
+
+    # These are the three main dashboard boxes
+    cards = ctk.CTkFrame(content, fg_color="transparent")
+    cards.pack(fill="x", padx=30)
+
+    card1 = ctk.CTkFrame(cards)
+    card1.pack(side="left", fill="both", expand=True, padx=8)
+
+    ctk.CTkLabel(
+        card1,
+        text="TOTAL DISTANCE",
+        font=ctk.CTkFont(size=13)
+    ).pack(pady=(25, 5))
+
+    ctk.CTkLabel(
+        card1,
+        text=f"{total_distance:.1f} km",
+        font=ctk.CTkFont(size=28, weight="bold")
+    ).pack(pady=(0, 25))
+
+    card2 = ctk.CTkFrame(cards)
+    card2.pack(side="left", fill="both", expand=True, padx=8)
+
+    ctk.CTkLabel(
+        card2,
+        text="SESSIONS",
+        font=ctk.CTkFont(size=13)
+    ).pack(pady=(25, 5))
+
+    ctk.CTkLabel(
+        card2,
+        text=str(sessions),
+        font=ctk.CTkFont(size=28, weight="bold")
+    ).pack(pady=(0, 25))
+
+    cursor.execute("SELECT pb_2000 FROM profile WHERE id = 1")
+    pb = cursor.fetchone()[0]
+
+    if not pb:
+        pb = "--"
+
+    card3 = ctk.CTkFrame(cards)
+    card3.pack(side="left", fill="both", expand=True, padx=8)
+
+    ctk.CTkLabel(
+        card3,
+        text="2K ERG PB",
+        font=ctk.CTkFont(size=13)
+    ).pack(pady=(25, 5))
+
+    ctk.CTkLabel(
+        card3,
+        text=pb,
+        font=ctk.CTkFont(size=28, weight="bold")
+    ).pack(pady=(0, 25))
+
+    # Recent sessions
+    recent = ctk.CTkFrame(content)
+    recent.pack(fill="both", expand=True, padx=40, pady=30)
+
+    ctk.CTkLabel(
+        recent,
+        text="Recent Training",
+        font=ctk.CTkFont(size=21, weight="bold")
+    ).pack(anchor="w", padx=25, pady=(20, 10))
+
+    cursor.execute("""
+    SELECT date, session_type, distance, split
+    FROM training
+    ORDER BY id DESC
+    LIMIT 6
+    """)
+
+    sessions_data = cursor.fetchall()
+
+    if not sessions_data:
+        ctk.CTkLabel(
+            recent,
+            text="No training sessions recorded yet."
+        ).pack(anchor="w", padx=25, pady=10)
+
+    else:
+        for row in sessions_data:
+            text = f"{row[0]}   |   {row[1]}   |   {row[2]} km   |   {row[3]}"
+            ctk.CTkLabel(
+                recent,
+                text=text,
+                font=ctk.CTkFont(size=14)
+            ).pack(anchor="w", padx=25, pady=5)
