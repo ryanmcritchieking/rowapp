@@ -91,3 +91,65 @@ if cursor.fetchone() is None:
     """)
 
 db.commit()
+
+
+
+
+
+
+
+
+
+
+
+
+# ---------------- MAIN WINDOW ----------------
+
+sidebar = ctk.CTkFrame(app, width=220, corner_radius=0)
+sidebar.pack(side="left", fill="y")
+sidebar.pack_propagate(False)
+
+content = ctk.CTkFrame(app, corner_radius=0)
+content.pack(side="right", fill="both", expand=True)
+
+
+# Clears the old screen before opening another one
+def clear_page():
+    for thing in content.winfo_children():
+        thing.destroy()
+
+
+# Makes the title on each page
+def page_title(title, subtitle=""):
+    ctk.CTkLabel(
+        content,
+        text=title,
+        font=ctk.CTkFont(size=30, weight="bold")
+    ).pack(anchor="w", padx=40, pady=(30, 5))
+
+    if subtitle:
+        ctk.CTkLabel(
+            content,
+            text=subtitle,
+            font=ctk.CTkFont(size=15)
+        ).pack(anchor="w", padx=40, pady=(0, 20))
+
+
+# Small popup for messages
+def message(text):
+    popup = ctk.CTkToplevel(app)
+    popup.title("Rowing Performance")
+    popup.geometry("350x180")
+    popup.grab_set()
+
+    ctk.CTkLabel(
+        popup,
+        text=text,
+        font=ctk.CTkFont(size=18, weight="bold")
+    ).pack(pady=40)
+
+    ctk.CTkButton(
+        popup,
+        text="OK",
+        command=popup.destroy
+    ).pack()
