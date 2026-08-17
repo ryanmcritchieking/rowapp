@@ -458,3 +458,133 @@ def training():
         height=45,
         command=save_training
     ).pack(anchor="w", pady=10)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ---------------- QUESTIONNAIRE ----------------
+
+def questionnaire():
+    clear_page()
+
+    page_title(
+        "Daily Questionnaire",
+        "A quick check of how you are feeling"
+    )
+
+    frame = ctk.CTkScrollableFrame(content)
+    frame.pack(fill="both", expand=True, padx=40, pady=10)
+
+    ctk.CTkLabel(
+        frame,
+        text="How hard was today's session? (RPE)"
+    ).pack(pady=(20, 5))
+
+    rpe = ctk.CTkSlider(
+        frame,
+        from_=1,
+        to=10,
+        number_of_steps=9,
+        width=500
+    )
+    rpe.pack(pady=10)
+    rpe.set(5)
+
+    rpe_number = ctk.CTkLabel(
+        frame,
+        text="5"
+    )
+    rpe_number.pack()
+
+    def update_rpe(value):
+        rpe_number.configure(text=str(round(value)))
+
+    rpe.configure(command=update_rpe)
+
+    ctk.CTkLabel(
+        frame,
+        text="How did you feel before training?"
+    ).pack(pady=(30, 5))
+
+    before = ctk.CTkComboBox(
+        frame,
+        values=["Very good", "Good", "Average", "Tired", "Very tired"],
+        width=350
+    )
+    before.pack()
+    before.set("Average")
+
+    ctk.CTkLabel(
+        frame,
+        text="How do you feel after training?"
+    ).pack(pady=(25, 5))
+
+    after = ctk.CTkComboBox(
+        frame,
+        values=["Very good", "Good", "Average", "Tired", "Very tired"],
+        width=350
+    )
+    after.pack()
+    after.set("Average")
+
+    ctk.CTkLabel(
+        frame,
+        text="Any pain or injuries?"
+    ).pack(pady=(25, 5))
+
+    pain = ctk.CTkComboBox(
+        frame,
+        values=["No", "Minor", "Moderate", "Severe"],
+        width=350
+    )
+    pain.pack()
+    pain.set("No")
+
+    ctk.CTkLabel(
+        frame,
+        text="Comments"
+    ).pack(pady=(25, 5))
+
+    comments = ctk.CTkTextbox(
+        frame,
+        width=500,
+        height=120
+    )
+    comments.pack()
+
+    def save_questionnaire():
+        cursor.execute("""
+        INSERT INTO questionnaire
+        (date, rpe, before_feeling, after_feeling, pain, comments)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            datetime.now().strftime("%Y-%m-%d"),
+            round(rpe.get()),
+            before.get(),
+            after.get(),
+            pain.get(),
+            comments.get("1.0", "end").strip()
+        ))
+
+        db.commit()
+        message("Questionnaire saved!")
+
+    ctk.CTkButton(
+        frame,
+        text="Save Questionnaire",
+        width=250,
+        height=45,
+        command=save_questionnaire
+    ).pack(pady=30)
