@@ -1099,3 +1099,14 @@ for text, command in buttons:
         fg_color="transparent",
         anchor="w"
     ).pack(fill="x", padx=15, pady=4)
+
+
+
+
+
+
+
+
+home()
+
+app.mainloop()
