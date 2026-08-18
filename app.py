@@ -848,3 +848,152 @@ def goals():
             box,
             text=f"{round(row[2])}%"
         ).pack(anchor="w", padx=15, pady=(0, 10))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ---------------- PROFILE ----------------
+
+def profile():
+    clear_page()
+
+    page_title(
+        "Profile",
+        "Your athlete information and erg PBs"
+    )
+
+    frame = ctk.CTkScrollableFrame(content)
+    frame.pack(fill="both", expand=True, padx=40, pady=10)
+
+    cursor.execute("""
+    SELECT name, age, club, boat_class, weight,
+           pb_500, pb_1000, pb_2000, pb_5000, pb_6000
+    FROM profile
+    WHERE id = 1
+    """)
+
+    data = cursor.fetchone()
+
+    labels = [
+        "Name",
+        "Age",
+        "Club",
+        "Boat Class",
+        "Weight"
+    ]
+
+    entries = []
+
+    for i in range(5):
+        ctk.CTkLabel(
+            frame,
+            text=labels[i]
+        ).pack(anchor="w", pady=(8, 3))
+
+        entry = ctk.CTkEntry(
+            frame,
+            width=350
+        )
+        entry.pack(anchor="w")
+
+        if data[i]:
+            entry.insert(0, data[i])
+
+        entries.append(entry)
+
+    ctk.CTkLabel(
+        frame,
+        text="Erg Personal Bests",
+        font=ctk.CTkFont(size=21, weight="bold")
+    ).pack(anchor="w", pady=(30, 15))
+
+    pb_labels = [
+        "500m PB",
+        "1k PB",
+        "2k PB",
+        "5k PB",
+        "6k PB"
+    ]
+
+    pb_entries = []
+
+    for i in range(5):
+        ctk.CTkLabel(
+            frame,
+            text=pb_labels[i]
+        ).pack(anchor="w", pady=(5, 3))
+
+        entry = ctk.CTkEntry(
+            frame,
+            width=350
+        )
+        entry.pack(anchor="w")
+
+        if data[i + 5]:
+            entry.insert(0, data[i + 5])
+
+        pb_entries.append(entry)
+
+    def save_profile():
+        cursor.execute("""
+        UPDATE profile
+        SET name = ?,
+            age = ?,
+            club = ?,
+            boat_class = ?,
+            weight = ?,
+            pb_500 = ?,
+            pb_1000 = ?,
+            pb_2000 = ?,
+            pb_5000 = ?,
+            pb_6000 = ?
+        WHERE id = 1
+        """, (
+            entries[0].get(),
+            entries[1].get(),
+            entries[2].get(),
+            entries[3].get(),
+            entries[4].get(),
+            pb_entries[0].get(),
+            pb_entries[1].get(),
+            pb_entries[2].get(),
+            pb_entries[3].get(),
+            pb_entries[4].get()
+        ))
+
+        db.commit()
+        message("Profile saved!")
+
+    ctk.CTkButton(
+        frame,
+        text="Save Profile",
+        width=250,
+        height=45,
+        command=save_profile
+    ).pack(anchor="w", pady=30)
+
+
+def get_pb():
+    cursor.execute(
+        "SELECT pb_2000 FROM profile WHERE id = 1"
+    )
+
+    result = cursor.fetchone()
+
+    if result and result[0]:
+        return result[0]
+
+    return "--"
