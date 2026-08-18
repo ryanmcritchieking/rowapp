@@ -997,3 +997,105 @@ def get_pb():
         return result[0]
 
     return "--"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ---------------- SETTINGS ----------------
+
+def settings():
+    clear_page()
+
+    page_title(
+        "Settings",
+        "Change how the app works"
+    )
+
+    frame = ctk.CTkFrame(content)
+    frame.pack(fill="both", expand=True, padx=40, pady=10)
+
+    ctk.CTkLabel(
+        frame,
+        text="Appearance",
+        font=ctk.CTkFont(size=20, weight="bold")
+    ).pack(pady=(30, 10))
+
+    appearance = ctk.CTkOptionMenu(
+        frame,
+        values=["Dark", "Light", "System"],
+        command=change_appearance
+    )
+    appearance.pack()
+    appearance.set("Dark")
+
+    ctk.CTkLabel(
+        frame,
+        text="Notifications",
+        font=ctk.CTkFont(size=20, weight="bold")
+    ).pack(pady=(40, 10))
+
+    ctk.CTkSwitch(
+        frame,
+        text="Training reminders"
+    ).pack(pady=10)
+
+    ctk.CTkSwitch(
+        frame,
+        text="Daily questionnaire reminders"
+    ).pack(pady=10)
+
+    ctk.CTkLabel(
+        frame,
+        text="Database: rowing.db"
+    ).pack(pady=40)
+
+
+def change_appearance(choice):
+    ctk.set_appearance_mode(choice.lower())
+
+
+# ---------------- SIDEBAR ----------------
+
+ctk.CTkLabel(
+    sidebar,
+    text="ROWING\nPERFORMANCE",
+    font=ctk.CTkFont(size=22, weight="bold")
+).pack(pady=30)
+
+
+# Buttons for moving between pages
+buttons = [
+    ("🏠  Home", home),
+    ("🚣  Training", training),
+    ("📝  Questionnaire", questionnaire),
+    ("📈  Progress", progress),
+    ("🎯  Goals", goals),
+    ("👤  Profile", profile),
+    ("⚙  Settings", settings)
+]
+
+for text, command in buttons:
+    ctk.CTkButton(
+        sidebar,
+        text=text,
+        command=command,
+        height=45,
+        fg_color="transparent",
+        anchor="w"
+    ).pack(fill="x", padx=15, pady=4)
