@@ -687,3 +687,164 @@ def progress():
             history,
             text=f"{row[0]}     {row[1]} km     {row[2]}"
         ).pack(anchor="w", padx=20, pady=4)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ---------------- GOALS ----------------
+
+def goals():
+    clear_page()
+
+    page_title(
+        "Goals",
+        "Set goals and track your progress"
+    )
+
+    frame = ctk.CTkScrollableFrame(content)
+    frame.pack(fill="both", expand=True, padx=40, pady=10)
+
+    ctk.CTkLabel(
+        frame,
+        text="Goal type"
+    ).pack(pady=(15, 5))
+
+    goal_type = ctk.CTkComboBox(
+        frame,
+        values=[
+            "2k Erg",
+            "5k Erg",
+            "Weekly Distance",
+            "Season Distance",
+            "On-Water Split",
+            "Other"
+        ],
+        width=350
+    )
+    goal_type.pack()
+    goal_type.set("2k Erg")
+
+    ctk.CTkLabel(
+        frame,
+        text="Target"
+    ).pack(pady=(20, 5))
+
+    target = ctk.CTkEntry(
+        frame,
+        width=350,
+        placeholder_text="Example: 6:30"
+    )
+    target.pack()
+
+    ctk.CTkLabel(
+        frame,
+        text="Progress"
+    ).pack(pady=(20, 5))
+
+    goal_progress = ctk.CTkSlider(
+        frame,
+        from_=0,
+        to=100,
+        width=500
+    )
+    goal_progress.pack()
+    goal_progress.set(0)
+
+    progress_label = ctk.CTkLabel(
+        frame,
+        text="0%"
+    )
+    progress_label.pack()
+
+    def change_progress(value):
+        progress_label.configure(
+            text=f"{round(value)}%"
+        )
+
+    goal_progress.configure(command=change_progress)
+
+    def save_goal():
+        if not target.get():
+            message("Enter a target first.")
+            return
+
+        cursor.execute("""
+        INSERT INTO goals
+        (goal_type, target, progress)
+        VALUES (?, ?, ?)
+        """, (
+            goal_type.get(),
+            target.get(),
+            goal_progress.get()
+        ))
+
+        db.commit()
+
+        message("Goal saved!")
+        goals()
+
+    ctk.CTkButton(
+        frame,
+        text="Save Goal",
+        width=250,
+        height=45,
+        command=save_goal
+    ).pack(pady=25)
+
+    ctk.CTkLabel(
+        frame,
+        text="My Goals",
+        font=ctk.CTkFont(size=21, weight="bold")
+    ).pack(pady=20)
+
+    cursor.execute("""
+    SELECT goal_type, target, progress
+    FROM goals
+    ORDER BY id DESC
+    """)
+
+    goal_rows = cursor.fetchall()
+
+    if not goal_rows:
+        ctk.CTkLabel(
+            frame,
+            text="No goals yet."
+        ).pack()
+
+    for row in goal_rows:
+        box = ctk.CTkFrame(frame)
+        box.pack(fill="x", pady=8)
+
+        ctk.CTkLabel(
+            box,
+            text=f"{row[0]}   |   Target: {row[1]}"
+        ).pack(anchor="w", padx=15, pady=(10, 3))
+
+        bar = ctk.CTkProgressBar(box)
+        bar.pack(fill="x", padx=15, pady=5)
+        bar.set(row[2] / 100)
+
+        ctk.CTkLabel(
+            box,
+            text=f"{round(row[2])}%"
+        ).pack(anchor="w", padx=15, pady=(0, 10))
