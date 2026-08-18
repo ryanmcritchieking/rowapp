@@ -588,3 +588,102 @@ def questionnaire():
         height=45,
         command=save_questionnaire
     ).pack(pady=30)
+
+
+
+
+
+
+
+
+
+
+
+# ---------------- PROGRESS ----------------
+
+def progress():
+    clear_page()
+
+    page_title(
+        "Progress",
+        "Your training statistics"
+    )
+
+    cursor.execute("""
+    SELECT COUNT(*), COALESCE(SUM(distance), 0)
+    FROM training
+    """)
+
+    data = cursor.fetchone()
+
+    sessions = data[0]
+    kilometres = data[1]
+
+    cursor.execute("""
+    SELECT AVG(stroke_rate)
+    FROM training
+    WHERE stroke_rate > 0
+    """)
+
+    average_rate = cursor.fetchone()[0]
+
+    if average_rate:
+        average_rate = round(average_rate)
+    else:
+        average_rate = "--"
+
+    stats = ctk.CTkFrame(content, fg_color="transparent")
+    stats.pack(fill="x", padx=30)
+
+    values = [
+        ("Sessions", sessions),
+        ("Total km", f"{kilometres:.1f}"),
+        ("Average SR", average_rate),
+        ("2k PB", get_pb())
+    ]
+
+    for title, value in values:
+        box = ctk.CTkFrame(stats)
+        box.pack(side="left", fill="both", expand=True, padx=8)
+
+        ctk.CTkLabel(
+            box,
+            text=title
+        ).pack(pady=(20, 5))
+
+        ctk.CTkLabel(
+            box,
+            text=str(value),
+            font=ctk.CTkFont(size=25, weight="bold")
+        ).pack(pady=(0, 20))
+
+    # Simple training history
+    history = ctk.CTkFrame(content)
+    history.pack(fill="both", expand=True, padx=40, pady=30)
+
+    ctk.CTkLabel(
+        history,
+        text="Training History",
+        font=ctk.CTkFont(size=21, weight="bold")
+    ).pack(anchor="w", padx=20, pady=20)
+
+    cursor.execute("""
+    SELECT date, distance, split
+    FROM training
+    ORDER BY id DESC
+    LIMIT 10
+    """)
+
+    rows = cursor.fetchall()
+
+    if not rows:
+        ctk.CTkLabel(
+            history,
+            text="Log some training to see your progress."
+        ).pack()
+
+    for row in rows:
+        ctk.CTkLabel(
+            history,
+            text=f"{row[0]}     {row[1]} km     {row[2]}"
+        ).pack(anchor="w", padx=20, pady=4)
