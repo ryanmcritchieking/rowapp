@@ -1,6 +1,9 @@
 import customtkinter as ctk
 import sqlite3
 from datetime import datetime
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
 
 # Dark mode for now
 ctk.set_appearance_mode("dark")
