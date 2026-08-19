@@ -12,21 +12,12 @@ app.geometry("1200x750")
 app.minsize(1000, 650)
 
 
-
-
-
-
-
-
-
-
 # ---------------- DATABASE ----------------
 
-# I am using SQLite so the training doesn't disappear
-# when I close the app
 db = sqlite3.connect("rowing.db")
 cursor = db.cursor()
 
+# I added current and adjusted split to the training table
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS training (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,7 +29,10 @@ CREATE TABLE IF NOT EXISTS training (
     stroke_rate INTEGER,
     heart_rate INTEGER,
     boat_class TEXT,
-    notes TEXT
+    notes TEXT,
+    current REAL,
+    current_direction TEXT,
+    adjusted_split TEXT
 )
 """)
 
@@ -79,7 +73,7 @@ CREATE TABLE IF NOT EXISTS profile (
 )
 """)
 
-# Make one profile row if there isn't one yet
+# Make a profile if there isn't one
 cursor.execute("SELECT * FROM profile WHERE id = 1")
 
 if cursor.fetchone() is None:
@@ -93,16 +87,6 @@ if cursor.fetchone() is None:
 db.commit()
 
 
-
-
-
-
-
-
-
-
-
-
 # ---------------- MAIN WINDOW ----------------
 
 sidebar = ctk.CTkFrame(app, width=220, corner_radius=0)
@@ -113,13 +97,12 @@ content = ctk.CTkFrame(app, corner_radius=0)
 content.pack(side="right", fill="both", expand=True)
 
 
-# Clears the old screen before opening another one
+# Clears the page before opening another one
 def clear_page():
     for thing in content.winfo_children():
         thing.destroy()
 
 
-# Makes the title on each page
 def page_title(title, subtitle=""):
     ctk.CTkLabel(
         content,
@@ -135,18 +118,18 @@ def page_title(title, subtitle=""):
         ).pack(anchor="w", padx=40, pady=(0, 20))
 
 
-# Small popup for messages
+# Simple popup message
 def message(text):
     popup = ctk.CTkToplevel(app)
     popup.title("Rowing Performance")
-    popup.geometry("350x180")
+    popup.geometry("400x200")
     popup.grab_set()
 
     ctk.CTkLabel(
         popup,
         text=text,
-        font=ctk.CTkFont(size=18, weight="bold")
-    ).pack(pady=40)
+        font=ctk.CTkFont(size=17, weight="bold")
+    ).pack(pady=45)
 
     ctk.CTkButton(
         popup,
@@ -155,22 +138,47 @@ def message(text):
     ).pack()
 
 
+# ---------------- TIDE CALCULATION ----------------
 
+def calculate_adjusted_split(split_text, current, direction):
+    """
+    This is only an estimate for now.
 
+    A positive current means the river is helping.
+    A negative current means the river is slowing the boat.
 
+    Later I can test this against real Waihopai River data.
+    """
 
+    try:
+        # Turn 2:10 into seconds
+        parts = split_text.split(":")
 
+        if len(parts) != 2:
+            return "--"
 
+        minutes = float(parts[0])
+        seconds = float(parts[1])
 
+        split_seconds = minutes * 60 + seconds
 
+        # This is a simple estimate.
+        # I chose 5% per 1 m/s as a starting point.
+        adjustment = current * 0.05
 
+        if direction == "Helping":
+            adjusted_seconds = split_seconds * (1 + adjustment)
 
+        else:
+            adjusted_seconds = split_seconds * (1 - adjustment)
 
+        adjusted_minutes = int(adjusted_seconds // 60)
+        adjusted_remaining = adjusted_seconds % 60
 
+        return f"{adjusted_minutes}:{adjusted_remaining:04.1f}"
 
-
-
-
+    except:
+        return "--"
 
 
 # ---------------- HOME ----------------
@@ -183,14 +191,15 @@ def home():
         "Your training overview"
     )
 
-    # Get some numbers from the database
-    cursor.execute("SELECT COUNT(*), COALESCE(SUM(distance), 0) FROM training")
+    cursor.execute(
+        "SELECT COUNT(*), COALESCE(SUM(distance), 0) FROM training"
+    )
+
     result = cursor.fetchone()
 
     sessions = result[0]
     total_distance = result[1]
 
-    # These are the three main dashboard boxes
     cards = ctk.CTkFrame(content, fg_color="transparent")
     cards.pack(fill="x", padx=30)
 
@@ -199,8 +208,7 @@ def home():
 
     ctk.CTkLabel(
         card1,
-        text="TOTAL DISTANCE",
-        font=ctk.CTkFont(size=13)
+        text="TOTAL DISTANCE"
     ).pack(pady=(25, 5))
 
     ctk.CTkLabel(
@@ -214,8 +222,7 @@ def home():
 
     ctk.CTkLabel(
         card2,
-        text="SESSIONS",
-        font=ctk.CTkFont(size=13)
+        text="SESSIONS"
     ).pack(pady=(25, 5))
 
     ctk.CTkLabel(
@@ -224,28 +231,20 @@ def home():
         font=ctk.CTkFont(size=28, weight="bold")
     ).pack(pady=(0, 25))
 
-    cursor.execute("SELECT pb_2000 FROM profile WHERE id = 1")
-    pb = cursor.fetchone()[0]
-
-    if not pb:
-        pb = "--"
-
     card3 = ctk.CTkFrame(cards)
     card3.pack(side="left", fill="both", expand=True, padx=8)
 
     ctk.CTkLabel(
         card3,
-        text="2K ERG PB",
-        font=ctk.CTkFont(size=13)
+        text="2K ERG PB"
     ).pack(pady=(25, 5))
 
     ctk.CTkLabel(
         card3,
-        text=pb,
+        text=get_pb(),
         font=ctk.CTkFont(size=28, weight="bold")
     ).pack(pady=(0, 25))
 
-    # Recent sessions
     recent = ctk.CTkFrame(content)
     recent.pack(fill="both", expand=True, padx=40, pady=30)
 
@@ -256,45 +255,34 @@ def home():
     ).pack(anchor="w", padx=25, pady=(20, 10))
 
     cursor.execute("""
-    SELECT date, session_type, distance, split
+    SELECT date, session_type, distance, split, adjusted_split
     FROM training
     ORDER BY id DESC
-    LIMIT 6
+    LIMIT 8
     """)
 
-    sessions_data = cursor.fetchall()
+    rows = cursor.fetchall()
 
-    if not sessions_data:
+    if not rows:
         ctk.CTkLabel(
             recent,
             text="No training sessions recorded yet."
-        ).pack(anchor="w", padx=25, pady=10)
+        ).pack(anchor="w", padx=25)
 
-    else:
-        for row in sessions_data:
-            text = f"{row[0]}   |   {row[1]}   |   {row[2]} km   |   {row[3]}"
-            ctk.CTkLabel(
-                recent,
-                text=text,
-                font=ctk.CTkFont(size=14)
-            ).pack(anchor="w", padx=25, pady=5)
+    for row in rows:
 
+        text = (
+            f"{row[0]}   |   {row[1]}   |   "
+            f"{row[2]} km   |   {row[3]}"
+        )
 
+        if row[4] and row[4] != "--":
+            text += f"   |   Adjusted: {row[4]}"
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        ctk.CTkLabel(
+            recent,
+            text=text
+        ).pack(anchor="w", padx=25, pady=4)
 
 
 # ---------------- TRAINING ----------------
@@ -317,123 +305,198 @@ def training():
 
     session_type = ctk.CTkComboBox(
         frame,
-        values=["Water", "Erg", "Gym", "Running", "Cross Training"],
+        values=[
+            "Water",
+            "Erg",
+            "Gym",
+            "Running",
+            "Cross Training"
+        ],
         width=350
     )
-    session_type.pack(anchor="w", pady=(0, 15))
+    session_type.pack(anchor="w")
     session_type.set("Water")
 
     ctk.CTkLabel(
         frame,
         text="Distance (km)"
-    ).pack(anchor="w", pady=(5, 3))
+    ).pack(anchor="w", pady=(15, 3))
 
     distance = ctk.CTkEntry(
         frame,
         width=350,
         placeholder_text="Example: 10"
     )
-    distance.pack(anchor="w", pady=(0, 15))
+    distance.pack(anchor="w")
 
     ctk.CTkLabel(
         frame,
         text="Time"
-    ).pack(anchor="w", pady=(5, 3))
+    ).pack(anchor="w", pady=(15, 3))
 
     time_entry = ctk.CTkEntry(
         frame,
         width=350,
         placeholder_text="Example: 40:30"
     )
-    time_entry.pack(anchor="w", pady=(0, 15))
+    time_entry.pack(anchor="w")
 
     ctk.CTkLabel(
         frame,
         text="Average split"
-    ).pack(anchor="w", pady=(5, 3))
+    ).pack(anchor="w", pady=(15, 3))
 
     split = ctk.CTkEntry(
         frame,
         width=350,
         placeholder_text="Example: 2:05"
     )
-    split.pack(anchor="w", pady=(0, 15))
+    split.pack(anchor="w")
+
+    # ---------------- TIDE ----------------
+
+    ctk.CTkLabel(
+        frame,
+        text="River Current",
+        font=ctk.CTkFont(size=21, weight="bold")
+    ).pack(anchor="w", pady=(30, 10))
+
+    ctk.CTkLabel(
+        frame,
+        text="Current speed (m/s)"
+    ).pack(anchor="w", pady=(5, 3))
+
+    current = ctk.CTkEntry(
+        frame,
+        width=350,
+        placeholder_text="Example: 0.4"
+    )
+    current.pack(anchor="w")
+
+    ctk.CTkLabel(
+        frame,
+        text="Was the current helping or against you?"
+    ).pack(anchor="w", pady=(15, 3))
+
+    direction = ctk.CTkComboBox(
+        frame,
+        values=[
+            "Helping",
+            "Against",
+            "No current"
+        ],
+        width=350
+    )
+    direction.pack(anchor="w")
+    direction.set("No current")
+
+    adjusted_label = ctk.CTkLabel(
+        frame,
+        text="Adjusted split: --",
+        font=ctk.CTkFont(size=17, weight="bold")
+    )
+    adjusted_label.pack(anchor="w", pady=20)
+
+    # Calculate it before saving
+    def show_adjusted():
+
+        try:
+            current_value = float(current.get())
+        except ValueError:
+            current_value = 0
+
+        adjusted = calculate_adjusted_split(
+            split.get(),
+            current_value,
+            direction.get()
+        )
+
+        adjusted_label.configure(
+            text=f"Adjusted split: {adjusted}"
+        )
+
+    ctk.CTkButton(
+        frame,
+        text="Calculate Adjusted Split",
+        command=show_adjusted
+    ).pack(anchor="w", pady=5)
+
+    # ---------------- OTHER DATA ----------------
 
     ctk.CTkLabel(
         frame,
         text="Stroke rate"
-    ).pack(anchor="w", pady=(5, 3))
+    ).pack(anchor="w", pady=(20, 3))
 
     stroke_rate = ctk.CTkEntry(
         frame,
         width=350,
         placeholder_text="Example: 24"
     )
-    stroke_rate.pack(anchor="w", pady=(0, 15))
+    stroke_rate.pack(anchor="w")
 
     ctk.CTkLabel(
         frame,
         text="Heart rate"
-    ).pack(anchor="w", pady=(5, 3))
+    ).pack(anchor="w", pady=(15, 3))
 
     heart_rate = ctk.CTkEntry(
         frame,
         width=350,
         placeholder_text="Example: 150"
     )
-    heart_rate.pack(anchor="w", pady=(0, 15))
+    heart_rate.pack(anchor="w")
 
     ctk.CTkLabel(
         frame,
         text="Boat class"
-    ).pack(anchor="w", pady=(5, 3))
+    ).pack(anchor="w", pady=(15, 3))
 
     boat_class = ctk.CTkEntry(
         frame,
         width=350,
         placeholder_text="Example: U17 1x"
     )
-    boat_class.pack(anchor="w", pady=(0, 15))
+    boat_class.pack(anchor="w")
 
     ctk.CTkLabel(
         frame,
         text="Notes"
-    ).pack(anchor="w", pady=(5, 3))
+    ).pack(anchor="w", pady=(15, 3))
 
     notes = ctk.CTkTextbox(
         frame,
         width=500,
         height=120
     )
-    notes.pack(anchor="w", pady=(0, 20))
-
-    # Tide information is mainly for water sessions
-    ctk.CTkLabel(
-        frame,
-        text="Tide / current"
-    ).pack(anchor="w", pady=(5, 3))
-
-    tide = ctk.CTkEntry(
-        frame,
-        width=350,
-        placeholder_text="Example: +0.4 m/s"
-    )
-    tide.pack(anchor="w", pady=(0, 20))
+    notes.pack(anchor="w")
 
     def save_training():
+
         try:
             km = float(distance.get())
         except ValueError:
             message("Enter a number for distance.")
             return
 
-        notes_text = notes.get("1.0", "end").strip()
+        try:
+            current_value = float(current.get()) if current.get() else 0
+        except ValueError:
+            message("Current needs to be a number.")
+            return
+
+        adjusted = calculate_adjusted_split(
+            split.get(),
+            current_value,
+            direction.get()
+        )
 
         cursor.execute("""
         INSERT INTO training
         (date, session_type, distance, time, split,
-         stroke_rate, heart_rate, boat_class, notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+         stroke_rate, heart_rate, boat_class, notes,
+         current, current_direction, adjusted_split)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             datetime.now().strftime("%Y-%m-%d"),
             session_type.get(),
@@ -443,7 +506,10 @@ def training():
             stroke_rate.get() or 0,
             heart_rate.get() or 0,
             boat_class.get(),
-            notes_text
+            notes.get("1.0", "end").strip(),
+            current_value,
+            direction.get(),
+            adjusted
         ))
 
         db.commit()
@@ -457,21 +523,7 @@ def training():
         width=250,
         height=45,
         command=save_training
-    ).pack(anchor="w", pady=10)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    ).pack(anchor="w", pady=30)
 
 
 # ---------------- QUESTIONNAIRE ----------------
@@ -520,7 +572,13 @@ def questionnaire():
 
     before = ctk.CTkComboBox(
         frame,
-        values=["Very good", "Good", "Average", "Tired", "Very tired"],
+        values=[
+            "Very good",
+            "Good",
+            "Average",
+            "Tired",
+            "Very tired"
+        ],
         width=350
     )
     before.pack()
@@ -533,7 +591,13 @@ def questionnaire():
 
     after = ctk.CTkComboBox(
         frame,
-        values=["Very good", "Good", "Average", "Tired", "Very tired"],
+        values=[
+            "Very good",
+            "Good",
+            "Average",
+            "Tired",
+            "Very tired"
+        ],
         width=350
     )
     after.pack()
@@ -546,7 +610,12 @@ def questionnaire():
 
     pain = ctk.CTkComboBox(
         frame,
-        values=["No", "Minor", "Moderate", "Severe"],
+        values=[
+            "No",
+            "Minor",
+            "Moderate",
+            "Severe"
+        ],
         width=350
     )
     pain.pack()
@@ -565,6 +634,7 @@ def questionnaire():
     comments.pack()
 
     def save_questionnaire():
+
         cursor.execute("""
         INSERT INTO questionnaire
         (date, rpe, before_feeling, after_feeling, pain, comments)
@@ -579,6 +649,7 @@ def questionnaire():
         ))
 
         db.commit()
+
         message("Questionnaire saved!")
 
     ctk.CTkButton(
@@ -588,15 +659,6 @@ def questionnaire():
         height=45,
         command=save_questionnaire
     ).pack(pady=30)
-
-
-
-
-
-
-
-
-
 
 
 # ---------------- PROGRESS ----------------
@@ -643,6 +705,7 @@ def progress():
     ]
 
     for title, value in values:
+
         box = ctk.CTkFrame(stats)
         box.pack(side="left", fill="both", expand=True, padx=8)
 
@@ -657,8 +720,7 @@ def progress():
             font=ctk.CTkFont(size=25, weight="bold")
         ).pack(pady=(0, 20))
 
-    # Simple training history
-    history = ctk.CTkFrame(content)
+    history = ctk.CTkScrollableFrame(content)
     history.pack(fill="both", expand=True, padx=40, pady=30)
 
     ctk.CTkLabel(
@@ -668,10 +730,11 @@ def progress():
     ).pack(anchor="w", padx=20, pady=20)
 
     cursor.execute("""
-    SELECT date, distance, split
+    SELECT date, distance, split, current,
+           current_direction, adjusted_split
     FROM training
     ORDER BY id DESC
-    LIMIT 10
+    LIMIT 20
     """)
 
     rows = cursor.fetchall()
@@ -683,32 +746,25 @@ def progress():
         ).pack()
 
     for row in rows:
+
+        text = (
+            f"{row[0]}   |   {row[1]} km   |   "
+            f"Split: {row[2]}"
+        )
+
+        if row[3] != 0:
+            text += (
+                f"   |   Current: {row[3]} m/s "
+                f"({row[4]})"
+            )
+
+        if row[5] and row[5] != "--":
+            text += f"   |   Adjusted: {row[5]}"
+
         ctk.CTkLabel(
             history,
-            text=f"{row[0]}     {row[1]} km     {row[2]}"
-        ).pack(anchor="w", padx=20, pady=4)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+            text=text
+        ).pack(anchor="w", padx=20, pady=5)
 
 
 # ---------------- GOALS ----------------
@@ -784,6 +840,7 @@ def goals():
     goal_progress.configure(command=change_progress)
 
     def save_goal():
+
         if not target.get():
             message("Enter a target first.")
             return
@@ -832,6 +889,7 @@ def goals():
         ).pack()
 
     for row in goal_rows:
+
         box = ctk.CTkFrame(frame)
         box.pack(fill="x", pady=8)
 
@@ -848,21 +906,6 @@ def goals():
             box,
             text=f"{round(row[2])}%"
         ).pack(anchor="w", padx=15, pady=(0, 10))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # ---------------- PROFILE ----------------
@@ -898,6 +941,7 @@ def profile():
     entries = []
 
     for i in range(5):
+
         ctk.CTkLabel(
             frame,
             text=labels[i]
@@ -931,6 +975,7 @@ def profile():
     pb_entries = []
 
     for i in range(5):
+
         ctk.CTkLabel(
             frame,
             text=pb_labels[i]
@@ -948,6 +993,7 @@ def profile():
         pb_entries.append(entry)
 
     def save_profile():
+
         cursor.execute("""
         UPDATE profile
         SET name = ?,
@@ -987,6 +1033,7 @@ def profile():
 
 
 def get_pb():
+
     cursor.execute(
         "SELECT pb_2000 FROM profile WHERE id = 1"
     )
@@ -997,24 +1044,6 @@ def get_pb():
         return result[0]
 
     return "--"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # ---------------- SETTINGS ----------------
@@ -1060,11 +1089,6 @@ def settings():
         text="Daily questionnaire reminders"
     ).pack(pady=10)
 
-    ctk.CTkLabel(
-        frame,
-        text="Database: rowing.db"
-    ).pack(pady=40)
-
 
 def change_appearance(choice):
     ctk.set_appearance_mode(choice.lower())
@@ -1079,7 +1103,6 @@ ctk.CTkLabel(
 ).pack(pady=30)
 
 
-# Buttons for moving between pages
 buttons = [
     ("🏠  Home", home),
     ("🚣  Training", training),
@@ -1091,6 +1114,7 @@ buttons = [
 ]
 
 for text, command in buttons:
+
     ctk.CTkButton(
         sidebar,
         text=text,
@@ -1101,12 +1125,7 @@ for text, command in buttons:
     ).pack(fill="x", padx=15, pady=4)
 
 
-
-
-
-
-
-
+# Start on the home screen
 home()
 
 app.mainloop()
