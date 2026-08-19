@@ -832,19 +832,6 @@ def progress():
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
     # ---------------- SPLIT GRAPH ----------------
 
     split_title = ctk.CTkLabel(
@@ -893,6 +880,68 @@ def progress():
         canvas2.draw()
 
         canvas2.get_tk_widget().pack(
+            fill="both",
+            expand=True,
+            pady=(0, 30)
+        )
+
+
+
+
+
+
+
+
+
+
+   # ---------------- ADJUSTED SPLIT GRAPH ----------------
+
+    adjusted_title = ctk.CTkLabel(
+        graph_frame,
+        text="Tide Adjusted Split",
+        font=ctk.CTkFont(size=20, weight="bold")
+    )
+
+    adjusted_title.pack(anchor="w", pady=(10, 5))
+
+    figure3 = plt.Figure(figsize=(9, 4), dpi=100)
+
+    graph3 = figure3.add_subplot(111)
+
+    adjusted_dates = []
+    adjusted_values = []
+
+    for i in range(len(dates)):
+
+        if adjusted_splits[i] is not None:
+
+            adjusted_dates.append(dates[i])
+            adjusted_values.append(adjusted_splits[i])
+
+    if adjusted_values:
+
+        graph3.plot(
+            adjusted_dates,
+            adjusted_values,
+            marker="o"
+        )
+
+        graph3.set_xlabel("Date")
+        graph3.set_ylabel("Seconds / 500m")
+        graph3.set_title("Estimated Tide Adjusted Split")
+
+        graph3.tick_params(axis="x", rotation=45)
+
+        figure3.tight_layout()
+
+        canvas3 = FigureCanvasTkAgg(
+            figure3,
+            master=graph_frame
+        )
+
+        canvas3.draw()
+
+        canvas3.get_tk_widget().pack(
             fill="both",
             expand=True,
             pady=(0, 30)
