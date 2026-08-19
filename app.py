@@ -952,6 +952,55 @@ def progress():
 
 
 
+    # ---------------- HISTORY ----------------
+
+    ctk.CTkLabel(
+        graph_frame,
+        text="Training History",
+        font=ctk.CTkFont(size=20, weight="bold")
+    ).pack(anchor="w", pady=15)
+
+    cursor.execute("""
+    SELECT date, distance, split, current,
+           current_direction, adjusted_split
+    FROM training
+    ORDER BY id DESC
+    LIMIT 20
+    """)
+
+    history = cursor.fetchall()
+
+    for row in history:
+
+        text = (
+            f"{row[0]}   |   "
+            f"{row[1]} km   |   "
+            f"Split: {row[2]}"
+        )
+
+        if row[3] != 0:
+
+            text += (
+                f"   |   Current: "
+                f"{row[3]} m/s ({row[4]})"
+            )
+
+        if row[5] and row[5] != "--":
+
+            text += (
+                f"   |   Adjusted: {row[5]}"
+            )
+
+        ctk.CTkLabel(
+            graph_frame,
+            text=text
+        ).pack(anchor="w", pady=4)
+
+
+
+
+
+
 
 
 
