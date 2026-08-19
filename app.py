@@ -379,7 +379,7 @@ def training():
 
     ctk.CTkLabel(
         frame,
-        text="River Current",
+        text="River Current (optional)",
         font=ctk.CTkFont(size=21, weight="bold")
     ).pack(anchor="w", pady=(30, 10))
 
