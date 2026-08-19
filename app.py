@@ -685,30 +685,6 @@ def questionnaire():
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # ---------------- PROGRESS ----------------
 
 
@@ -995,28 +971,6 @@ def progress():
             graph_frame,
             text=text
         ).pack(anchor="w", pady=4)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
