@@ -87,6 +87,24 @@ if cursor.fetchone() is None:
 db.commit()
 
 
+# I added these later, so I need to add them to old databases too
+try:
+    cursor.execute("ALTER TABLE training ADD COLUMN current REAL")
+except sqlite3.OperationalError:
+    pass
+
+try:
+    cursor.execute("ALTER TABLE training ADD COLUMN current_direction TEXT")
+except sqlite3.OperationalError:
+    pass
+
+try:
+    cursor.execute("ALTER TABLE training ADD COLUMN adjusted_split TEXT")
+except sqlite3.OperationalError:
+    pass
+
+db.commit()
+
 # ---------------- MAIN WINDOW ----------------
 
 sidebar = ctk.CTkFrame(app, width=220, corner_radius=0)
