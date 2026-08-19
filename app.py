@@ -683,6 +683,32 @@ def questionnaire():
     ).pack(pady=30)
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # ---------------- PROGRESS ----------------
 
 def progress():
@@ -787,6 +813,33 @@ def progress():
             history,
             text=text
         ).pack(anchor="w", padx=20, pady=5)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # ---------------- GOALS ----------------
