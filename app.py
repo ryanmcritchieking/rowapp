@@ -87,6 +87,7 @@ if cursor.fetchone() is None:
 db.commit()
 
 
+
 # I added these later, so I need to add them to old databases too
 try:
     cursor.execute("ALTER TABLE training ADD COLUMN current REAL")
