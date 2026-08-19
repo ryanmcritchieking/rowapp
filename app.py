@@ -712,7 +712,122 @@ def questionnaire():
 # ---------------- PROGRESS ----------------
 
 
+def progress():
+    clear_page()
 
+    page_title(
+        "Progress",
+        "See how your training is changing over time"
+    )
+
+    # Get the basic numbers first
+    cursor.execute("""
+    SELECT COUNT(*), COALESCE(SUM(distance), 0)
+    FROM training
+    """)
+
+    data = cursor.fetchone()
+
+    sessions = data[0]
+    kilometres = data[1]
+
+    cursor.execute("""
+    SELECT AVG(stroke_rate)
+    FROM training
+    WHERE stroke_rate > 0
+    """)
+
+    average_rate = cursor.fetchone()[0]
+
+    if average_rate:
+        average_rate = round(average_rate)
+    else:
+        average_rate = "--"
+
+    # The top boxes show the main stats
+    stats = ctk.CTkFrame(content, fg_color="transparent")
+    stats.pack(fill="x", padx=30, pady=(0, 10))
+
+    values = [
+        ("Sessions", sessions),
+        ("Total km", f"{kilometres:.1f}"),
+        ("Average SR", average_rate),
+        ("2k PB", get_pb())
+    ]
+
+    for title, value in values:
+
+        box = ctk.CTkFrame(stats)
+        box.pack(side="left", fill="both", expand=True, padx=8)
+
+        ctk.CTkLabel(
+            box,
+            text=title
+        ).pack(pady=(15, 5))
+
+        ctk.CTkLabel(
+            box,
+            text=str(value),
+            font=ctk.CTkFont(size=25, weight="bold")
+        ).pack(pady=(0, 15))
+
+    # Get the training data for the graphs
+    cursor.execute("""
+    SELECT date, distance, split, adjusted_split
+    FROM training
+    WHERE distance > 0
+    ORDER BY id ASC
+    """)
+
+    rows = cursor.fetchall()
+
+    graph_frame = ctk.CTkScrollableFrame(content)
+    graph_frame.pack(fill="both", expand=True, padx=40, pady=10)
+
+    if not rows:
+
+        ctk.CTkLabel(
+            graph_frame,
+            text="Log some training first and your graphs will appear here.",
+            font=ctk.CTkFont(size=18)
+        ).pack(pady=50)
+
+        return
+
+    dates = []
+    distances = []
+    splits = []
+    adjusted_splits = []
+
+    for row in rows:
+
+        dates.append(row[0])
+        distances.append(row[1])
+
+        # Turn split like 2:05 into seconds
+        try:
+            parts = row[2].split(":")
+            split_seconds = (
+                float(parts[0]) * 60 +
+                float(parts[1])
+            )
+            splits.append(split_seconds)
+        except:
+            splits.append(None)
+
+        # Do the same for adjusted split
+        try:
+            if row[3] and row[3] != "--":
+                parts = row[3].split(":")
+                adjusted_seconds = (
+                    float(parts[0]) * 60 +
+                    float(parts[1])
+                )
+                adjusted_splits.append(adjusted_seconds)
+            else:
+                adjusted_splits.append(None)
+        except:
+            adjusted_splits.append(None)
 
 
 
