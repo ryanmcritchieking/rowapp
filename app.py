@@ -845,6 +845,75 @@ def progress():
 
 
 
+    # ---------------- SPLIT GRAPH ----------------
+
+    split_title = ctk.CTkLabel(
+        graph_frame,
+        text="Average Split",
+        font=ctk.CTkFont(size=20, weight="bold")
+    )
+
+    split_title.pack(anchor="w", pady=(10, 5))
+
+    figure2 = plt.Figure(figsize=(9, 4), dpi=100)
+
+    graph2 = figure2.add_subplot(111)
+
+    valid_dates = []
+    valid_splits = []
+
+    for i in range(len(dates)):
+
+        if splits[i] is not None:
+
+            valid_dates.append(dates[i])
+            valid_splits.append(splits[i])
+
+    if valid_splits:
+
+        graph2.plot(
+            valid_dates,
+            valid_splits,
+            marker="o"
+        )
+
+        graph2.set_xlabel("Date")
+        graph2.set_ylabel("Seconds / 500m")
+        graph2.set_title("Average Split")
+
+        graph2.tick_params(axis="x", rotation=45)
+
+        figure2.tight_layout()
+
+        canvas2 = FigureCanvasTkAgg(
+            figure2,
+            master=graph_frame
+        )
+
+        canvas2.draw()
+
+        canvas2.get_tk_widget().pack(
+            fill="both",
+            expand=True,
+            pady=(0, 30)
+        )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
