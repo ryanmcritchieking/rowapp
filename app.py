@@ -9,6 +9,15 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
+
+# Colours
+BG_COLOR = ("#F4F6F8", "#15171A")
+CARD_COLOR = ("#FFFFFF", "#1E2126")
+SIDEBAR_COLOR = ("#E9EDF2", "#111315")
+TEXT_COLOR = ("#1A1A1A", "#FFFFFF")
+SECONDARY_TEXT = ("#555555", "#B8BEC7")
+
+
 app = ctk.CTk()
 app.title("Rowing Performance")
 app.geometry("1200x750")
@@ -20,7 +29,6 @@ app.minsize(1000, 650)
 db = sqlite3.connect("rowing.db")
 cursor = db.cursor()
 
-# I added current and adjusted split to the training table
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS training (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -90,8 +98,7 @@ if cursor.fetchone() is None:
 db.commit()
 
 
-
-# I added these later, so I need to add them to old databases too
+# Add new columns to old databases
 try:
     cursor.execute("ALTER TABLE training ADD COLUMN current REAL")
 except sqlite3.OperationalError:
@@ -109,26 +116,38 @@ except sqlite3.OperationalError:
 
 db.commit()
 
+
 # ---------------- MAIN WINDOW ----------------
 
-sidebar = ctk.CTkFrame(app, width=220, corner_radius=0)
+sidebar = ctk.CTkFrame(
+    app,
+    width=220,
+    corner_radius=0,
+    fg_color=SIDEBAR_COLOR
+)
 sidebar.pack(side="left", fill="y")
 sidebar.pack_propagate(False)
 
-content = ctk.CTkFrame(app, corner_radius=0)
+content = ctk.CTkFrame(
+    app,
+    corner_radius=0,
+    fg_color=BG_COLOR
+)
 content.pack(side="right", fill="both", expand=True)
 
 
-# Clears the page before opening another one
+# Clears the page
 def clear_page():
     for thing in content.winfo_children():
         thing.destroy()
 
 
 def page_title(title, subtitle=""):
+
     ctk.CTkLabel(
         content,
         text=title,
+        text_color=TEXT_COLOR,
         font=ctk.CTkFont(size=30, weight="bold")
     ).pack(anchor="w", padx=40, pady=(30, 5))
 
@@ -136,12 +155,14 @@ def page_title(title, subtitle=""):
         ctk.CTkLabel(
             content,
             text=subtitle,
+            text_color=SECONDARY_TEXT,
             font=ctk.CTkFont(size=15)
         ).pack(anchor="w", padx=40, pady=(0, 20))
 
 
 # Simple popup message
 def message(text):
+
     popup = ctk.CTkToplevel(app)
     popup.title("Rowing Performance")
     popup.geometry("400x200")
@@ -150,6 +171,7 @@ def message(text):
     ctk.CTkLabel(
         popup,
         text=text,
+        text_color=TEXT_COLOR,
         font=ctk.CTkFont(size=17, weight="bold")
     ).pack(pady=45)
 
@@ -163,17 +185,9 @@ def message(text):
 # ---------------- TIDE CALCULATION ----------------
 
 def calculate_adjusted_split(split_text, current, direction):
-    """
-    This is only an estimate for now.
-
-    A positive current means the river is helping.
-    A negative current means the river is slowing the boat.
-
-    Later I can test this against real Waihopai River data.
-    """
 
     try:
-        # Turn 2:10 into seconds
+
         parts = split_text.split(":")
 
         if len(parts) != 2:
@@ -184,8 +198,7 @@ def calculate_adjusted_split(split_text, current, direction):
 
         split_seconds = minutes * 60 + seconds
 
-        # This is a simple estimate.
-        # I chose 5% per 1 m/s as a starting point.
+        # Simple estimate
         adjustment = current * 0.05
 
         if direction == "Helping":
@@ -206,6 +219,7 @@ def calculate_adjusted_split(split_text, current, direction):
 # ---------------- HOME ----------------
 
 def home():
+
     clear_page()
 
     page_title(
@@ -222,59 +236,105 @@ def home():
     sessions = result[0]
     total_distance = result[1]
 
-    cards = ctk.CTkFrame(content, fg_color="transparent")
+    cards = ctk.CTkFrame(
+        content,
+        fg_color="transparent"
+    )
     cards.pack(fill="x", padx=30)
 
-    card1 = ctk.CTkFrame(cards)
-    card1.pack(side="left", fill="both", expand=True, padx=8)
+    card1 = ctk.CTkFrame(
+        cards,
+        fg_color=CARD_COLOR
+    )
+    card1.pack(
+        side="left",
+        fill="both",
+        expand=True,
+        padx=8
+    )
 
     ctk.CTkLabel(
         card1,
-        text="TOTAL DISTANCE"
+        text="TOTAL DISTANCE",
+        text_color=SECONDARY_TEXT
     ).pack(pady=(25, 5))
 
     ctk.CTkLabel(
         card1,
         text=f"{total_distance:.1f} km",
+        text_color=TEXT_COLOR,
         font=ctk.CTkFont(size=28, weight="bold")
     ).pack(pady=(0, 25))
 
-    card2 = ctk.CTkFrame(cards)
-    card2.pack(side="left", fill="both", expand=True, padx=8)
+    card2 = ctk.CTkFrame(
+        cards,
+        fg_color=CARD_COLOR
+    )
+    card2.pack(
+        side="left",
+        fill="both",
+        expand=True,
+        padx=8
+    )
 
     ctk.CTkLabel(
         card2,
-        text="SESSIONS"
+        text="SESSIONS",
+        text_color=SECONDARY_TEXT
     ).pack(pady=(25, 5))
 
     ctk.CTkLabel(
         card2,
         text=str(sessions),
+        text_color=TEXT_COLOR,
         font=ctk.CTkFont(size=28, weight="bold")
     ).pack(pady=(0, 25))
 
-    card3 = ctk.CTkFrame(cards)
-    card3.pack(side="left", fill="both", expand=True, padx=8)
+    card3 = ctk.CTkFrame(
+        cards,
+        fg_color=CARD_COLOR
+    )
+    card3.pack(
+        side="left",
+        fill="both",
+        expand=True,
+        padx=8
+    )
 
     ctk.CTkLabel(
         card3,
-        text="2K ERG PB"
+        text="2K ERG PB",
+        text_color=SECONDARY_TEXT
     ).pack(pady=(25, 5))
 
     ctk.CTkLabel(
         card3,
         text=get_pb(),
+        text_color=TEXT_COLOR,
         font=ctk.CTkFont(size=28, weight="bold")
     ).pack(pady=(0, 25))
 
-    recent = ctk.CTkFrame(content)
-    recent.pack(fill="both", expand=True, padx=40, pady=30)
+    recent = ctk.CTkFrame(
+        content,
+        fg_color=CARD_COLOR
+    )
+    recent.pack(
+        fill="both",
+        expand=True,
+        padx=40,
+        pady=30
+    )
 
     ctk.CTkLabel(
         recent,
         text="Recent Training",
+        text_color=TEXT_COLOR,
         font=ctk.CTkFont(size=21, weight="bold")
-    ).pack(anchor="w", padx=25, pady=(20, 10))
+    ).pack(
+        anchor="w",
+        padx=25,
+        pady=(20, 10)
+    )
 
     cursor.execute("""
     SELECT date, session_type, distance, split, adjusted_split
@@ -286,9 +346,11 @@ def home():
     rows = cursor.fetchall()
 
     if not rows:
+
         ctk.CTkLabel(
             recent,
-            text="No training sessions recorded yet."
+            text="No training sessions recorded yet.",
+            text_color=SECONDARY_TEXT
         ).pack(anchor="w", padx=25)
 
     for row in rows:
@@ -303,13 +365,15 @@ def home():
 
         ctk.CTkLabel(
             recent,
-            text=text
+            text=text,
+            text_color=TEXT_COLOR
         ).pack(anchor="w", padx=25, pady=4)
 
 
 # ---------------- TRAINING ----------------
 
 def training():
+
     clear_page()
 
     page_title(
@@ -317,12 +381,21 @@ def training():
         "Record a training session"
     )
 
-    frame = ctk.CTkScrollableFrame(content)
-    frame.pack(fill="both", expand=True, padx=40, pady=10)
+    frame = ctk.CTkScrollableFrame(
+        content,
+        fg_color=BG_COLOR
+    )
+    frame.pack(
+        fill="both",
+        expand=True,
+        padx=40,
+        pady=10
+    )
 
     ctk.CTkLabel(
         frame,
-        text="Session type"
+        text="Session type",
+        text_color=TEXT_COLOR
     ).pack(anchor="w", pady=(10, 3))
 
     session_type = ctk.CTkComboBox(
@@ -341,7 +414,8 @@ def training():
 
     ctk.CTkLabel(
         frame,
-        text="Distance (km)"
+        text="Distance (km)",
+        text_color=TEXT_COLOR
     ).pack(anchor="w", pady=(15, 3))
 
     distance = ctk.CTkEntry(
@@ -353,7 +427,8 @@ def training():
 
     ctk.CTkLabel(
         frame,
-        text="Time"
+        text="Time",
+        text_color=TEXT_COLOR
     ).pack(anchor="w", pady=(15, 3))
 
     time_entry = ctk.CTkEntry(
@@ -365,7 +440,8 @@ def training():
 
     ctk.CTkLabel(
         frame,
-        text="Average split"
+        text="Average split",
+        text_color=TEXT_COLOR
     ).pack(anchor="w", pady=(15, 3))
 
     split = ctk.CTkEntry(
@@ -375,17 +451,19 @@ def training():
     )
     split.pack(anchor="w")
 
-    # ---------------- TIDE ----------------
+    # Tide
 
     ctk.CTkLabel(
         frame,
         text="River Current (optional)",
+        text_color=TEXT_COLOR,
         font=ctk.CTkFont(size=21, weight="bold")
     ).pack(anchor="w", pady=(30, 10))
 
     ctk.CTkLabel(
         frame,
-        text="Current speed (m/s)"
+        text="Current speed (m/s)",
+        text_color=TEXT_COLOR
     ).pack(anchor="w", pady=(5, 3))
 
     current = ctk.CTkEntry(
@@ -397,7 +475,8 @@ def training():
 
     ctk.CTkLabel(
         frame,
-        text="Was the current helping or against you?"
+        text="Was the current helping or against you?",
+        text_color=TEXT_COLOR
     ).pack(anchor="w", pady=(15, 3))
 
     direction = ctk.CTkComboBox(
@@ -415,11 +494,11 @@ def training():
     adjusted_label = ctk.CTkLabel(
         frame,
         text="Adjusted split: --",
+        text_color=TEXT_COLOR,
         font=ctk.CTkFont(size=17, weight="bold")
     )
     adjusted_label.pack(anchor="w", pady=20)
 
-    # Calculate it before saving
     def show_adjusted():
 
         try:
@@ -443,11 +522,12 @@ def training():
         command=show_adjusted
     ).pack(anchor="w", pady=5)
 
-    # ---------------- OTHER DATA ----------------
+    # Other data
 
     ctk.CTkLabel(
         frame,
-        text="Stroke rate"
+        text="Stroke rate",
+        text_color=TEXT_COLOR
     ).pack(anchor="w", pady=(20, 3))
 
     stroke_rate = ctk.CTkEntry(
@@ -459,7 +539,8 @@ def training():
 
     ctk.CTkLabel(
         frame,
-        text="Heart rate"
+        text="Heart rate",
+        text_color=TEXT_COLOR
     ).pack(anchor="w", pady=(15, 3))
 
     heart_rate = ctk.CTkEntry(
@@ -471,7 +552,8 @@ def training():
 
     ctk.CTkLabel(
         frame,
-        text="Boat class"
+        text="Boat class",
+        text_color=TEXT_COLOR
     ).pack(anchor="w", pady=(15, 3))
 
     boat_class = ctk.CTkEntry(
@@ -483,7 +565,8 @@ def training():
 
     ctk.CTkLabel(
         frame,
-        text="Notes"
+        text="Notes",
+        text_color=TEXT_COLOR
     ).pack(anchor="w", pady=(15, 3))
 
     notes = ctk.CTkTextbox(
@@ -551,6 +634,7 @@ def training():
 # ---------------- QUESTIONNAIRE ----------------
 
 def questionnaire():
+
     clear_page()
 
     page_title(
@@ -558,12 +642,21 @@ def questionnaire():
         "A quick check of how you are feeling"
     )
 
-    frame = ctk.CTkScrollableFrame(content)
-    frame.pack(fill="both", expand=True, padx=40, pady=10)
+    frame = ctk.CTkScrollableFrame(
+        content,
+        fg_color=BG_COLOR
+    )
+    frame.pack(
+        fill="both",
+        expand=True,
+        padx=40,
+        pady=10
+    )
 
     ctk.CTkLabel(
         frame,
-        text="How hard was today's session? (RPE)"
+        text="How hard was today's session? (RPE)",
+        text_color=TEXT_COLOR
     ).pack(pady=(20, 5))
 
     rpe = ctk.CTkSlider(
@@ -578,7 +671,8 @@ def questionnaire():
 
     rpe_number = ctk.CTkLabel(
         frame,
-        text="5"
+        text="5",
+        text_color=TEXT_COLOR
     )
     rpe_number.pack()
 
@@ -589,7 +683,8 @@ def questionnaire():
 
     ctk.CTkLabel(
         frame,
-        text="How did you feel before training?"
+        text="How did you feel before training?",
+        text_color=TEXT_COLOR
     ).pack(pady=(30, 5))
 
     before = ctk.CTkComboBox(
@@ -608,7 +703,8 @@ def questionnaire():
 
     ctk.CTkLabel(
         frame,
-        text="How do you feel after training?"
+        text="How do you feel after training?",
+        text_color=TEXT_COLOR
     ).pack(pady=(25, 5))
 
     after = ctk.CTkComboBox(
@@ -627,7 +723,8 @@ def questionnaire():
 
     ctk.CTkLabel(
         frame,
-        text="Any pain or injuries?"
+        text="Any pain or injuries?",
+        text_color=TEXT_COLOR
     ).pack(pady=(25, 5))
 
     pain = ctk.CTkComboBox(
@@ -645,7 +742,8 @@ def questionnaire():
 
     ctk.CTkLabel(
         frame,
-        text="Comments"
+        text="Comments",
+        text_color=TEXT_COLOR
     ).pack(pady=(25, 5))
 
     comments = ctk.CTkTextbox(
@@ -683,12 +781,10 @@ def questionnaire():
     ).pack(pady=30)
 
 
-
-
 # ---------------- PROGRESS ----------------
 
-
 def progress():
+
     clear_page()
 
     page_title(
@@ -696,7 +792,6 @@ def progress():
         "See how your training is changing over time"
     )
 
-    # Get the basic numbers first
     cursor.execute("""
     SELECT COUNT(*), COALESCE(SUM(distance), 0)
     FROM training
@@ -720,9 +815,15 @@ def progress():
     else:
         average_rate = "--"
 
-    # The top boxes show the main stats
-    stats = ctk.CTkFrame(content, fg_color="transparent")
-    stats.pack(fill="x", padx=30, pady=(0, 10))
+    stats = ctk.CTkFrame(
+        content,
+        fg_color="transparent"
+    )
+    stats.pack(
+        fill="x",
+        padx=30,
+        pady=(0, 10)
+    )
 
     values = [
         ("Sessions", sessions),
@@ -733,21 +834,30 @@ def progress():
 
     for title, value in values:
 
-        box = ctk.CTkFrame(stats)
-        box.pack(side="left", fill="both", expand=True, padx=8)
+        box = ctk.CTkFrame(
+            stats,
+            fg_color=CARD_COLOR
+        )
+        box.pack(
+            side="left",
+            fill="both",
+            expand=True,
+            padx=8
+        )
 
         ctk.CTkLabel(
             box,
-            text=title
+            text=title,
+            text_color=SECONDARY_TEXT
         ).pack(pady=(15, 5))
 
         ctk.CTkLabel(
             box,
             text=str(value),
+            text_color=TEXT_COLOR,
             font=ctk.CTkFont(size=25, weight="bold")
         ).pack(pady=(0, 15))
 
-    # Get the training data for the graphs
     cursor.execute("""
     SELECT date, distance, split, adjusted_split
     FROM training
@@ -757,14 +867,23 @@ def progress():
 
     rows = cursor.fetchall()
 
-    graph_frame = ctk.CTkScrollableFrame(content)
-    graph_frame.pack(fill="both", expand=True, padx=40, pady=10)
+    graph_frame = ctk.CTkScrollableFrame(
+        content,
+        fg_color=BG_COLOR
+    )
+    graph_frame.pack(
+        fill="both",
+        expand=True,
+        padx=40,
+        pady=10
+    )
 
     if not rows:
 
         ctk.CTkLabel(
             graph_frame,
             text="Log some training first and your graphs will appear here.",
+            text_color=SECONDARY_TEXT,
             font=ctk.CTkFont(size=18)
         ).pack(pady=50)
 
@@ -780,45 +899,60 @@ def progress():
         dates.append(row[0])
         distances.append(row[1])
 
-        # Turn split like 2:05 into seconds
         try:
+
             parts = row[2].split(":")
+
             split_seconds = (
                 float(parts[0]) * 60 +
                 float(parts[1])
             )
+
             splits.append(split_seconds)
+
         except:
+
             splits.append(None)
 
-        # Do the same for adjusted split
         try:
+
             if row[3] and row[3] != "--":
+
                 parts = row[3].split(":")
+
                 adjusted_seconds = (
                     float(parts[0]) * 60 +
                     float(parts[1])
                 )
+
                 adjusted_splits.append(adjusted_seconds)
+
             else:
+
                 adjusted_splits.append(None)
+
         except:
+
             adjusted_splits.append(None)
 
-
-
-
-    # ---------------- SPLIT GRAPH ----------------
+    # Split graph
 
     split_title = ctk.CTkLabel(
         graph_frame,
         text="Average Split",
+        text_color=TEXT_COLOR,
         font=ctk.CTkFont(size=20, weight="bold")
     )
 
-    split_title.pack(anchor="w", pady=(10, 5))
+    split_title.pack(
+        anchor="w",
+        pady=(10, 5)
+    )
 
-    figure2 = plt.Figure(figsize=(9, 4), dpi=100)
+    figure2 = plt.Figure(
+        figsize=(9, 4),
+        dpi=100
+    )
 
     graph2 = figure2.add_subplot(111)
 
@@ -844,7 +978,10 @@ def progress():
         graph2.set_ylabel("Seconds / 500m")
         graph2.set_title("Average Split")
 
-        graph2.tick_params(axis="x", rotation=45)
+        graph2.tick_params(
+            axis="x",
+            rotation=45
+        )
 
         figure2.tight_layout()
 
@@ -861,26 +998,24 @@ def progress():
             pady=(0, 30)
         )
 
-
-
-
-
-
-
-
-
-
-   # ---------------- ADJUSTED SPLIT GRAPH ----------------
+    # Adjusted split graph
 
     adjusted_title = ctk.CTkLabel(
         graph_frame,
         text="Tide Adjusted Split",
+        text_color=TEXT_COLOR,
         font=ctk.CTkFont(size=20, weight="bold")
     )
 
-    adjusted_title.pack(anchor="w", pady=(10, 5))
+    adjusted_title.pack(
+        anchor="w",
+        pady=(10, 5)
+    )
 
-    figure3 = plt.Figure(figsize=(9, 4), dpi=100)
+    figure3 = plt.Figure(
+        figsize=(9, 4),
+        dpi=100
+    )
 
     graph3 = figure3.add_subplot(111)
 
@@ -906,7 +1041,10 @@ def progress():
         graph3.set_ylabel("Seconds / 500m")
         graph3.set_title("Estimated Tide Adjusted Split")
 
-        graph3.tick_params(axis="x", rotation=45)
+        graph3.tick_params(
+            axis="x",
+            rotation=45
+        )
 
         figure3.tight_layout()
 
@@ -923,18 +1061,17 @@ def progress():
             pady=(0, 30)
         )
 
-
-
-
-
-
-    # ---------------- HISTORY ----------------
+    # History
 
     ctk.CTkLabel(
         graph_frame,
         text="Training History",
+        text_color=TEXT_COLOR,
         font=ctk.CTkFont(size=20, weight="bold")
-    ).pack(anchor="w", pady=15)
+    ).pack(
+        anchor="w",
+        pady=15
+    )
 
     cursor.execute("""
     SELECT date, distance, split, current,
@@ -969,17 +1106,18 @@ def progress():
 
         ctk.CTkLabel(
             graph_frame,
-            text=text
-        ).pack(anchor="w", pady=4)
-
-
-
-
+            text=text,
+            text_color=TEXT_COLOR
+        ).pack(
+            anchor="w",
+            pady=4
+        )
 
 
 # ---------------- GOALS ----------------
 
 def goals():
+
     clear_page()
 
     page_title(
@@ -987,12 +1125,21 @@ def goals():
         "Set goals and track your progress"
     )
 
-    frame = ctk.CTkScrollableFrame(content)
-    frame.pack(fill="both", expand=True, padx=40, pady=10)
+    frame = ctk.CTkScrollableFrame(
+        content,
+        fg_color=BG_COLOR
+    )
+    frame.pack(
+        fill="both",
+        expand=True,
+        padx=40,
+        pady=10
+    )
 
     ctk.CTkLabel(
         frame,
-        text="Goal type"
+        text="Goal type",
+        text_color=TEXT_COLOR
     ).pack(pady=(15, 5))
 
     goal_type = ctk.CTkComboBox(
@@ -1012,7 +1159,8 @@ def goals():
 
     ctk.CTkLabel(
         frame,
-        text="Target"
+        text="Target",
+        text_color=TEXT_COLOR
     ).pack(pady=(20, 5))
 
     target = ctk.CTkEntry(
@@ -1024,7 +1172,8 @@ def goals():
 
     ctk.CTkLabel(
         frame,
-        text="Progress"
+        text="Progress",
+        text_color=TEXT_COLOR
     ).pack(pady=(20, 5))
 
     goal_progress = ctk.CTkSlider(
@@ -1038,20 +1187,25 @@ def goals():
 
     progress_label = ctk.CTkLabel(
         frame,
-        text="0%"
+        text="0",
+        text_color=TEXT_COLOR
     )
     progress_label.pack()
 
     def change_progress(value):
+
         progress_label.configure(
             text=f"{round(value)}%"
         )
 
-    goal_progress.configure(command=change_progress)
+    goal_progress.configure(
+        command=change_progress
+    )
 
     def save_goal():
 
         if not target.get():
+
             message("Enter a target first.")
             return
 
@@ -1081,6 +1235,7 @@ def goals():
     ctk.CTkLabel(
         frame,
         text="My Goals",
+        text_color=TEXT_COLOR,
         font=ctk.CTkFont(size=21, weight="bold")
     ).pack(pady=20)
 
@@ -1093,34 +1248,59 @@ def goals():
     goal_rows = cursor.fetchall()
 
     if not goal_rows:
+
         ctk.CTkLabel(
             frame,
-            text="No goals yet."
+            text="No goals yet.",
+            text_color=SECONDARY_TEXT
         ).pack()
 
     for row in goal_rows:
 
-        box = ctk.CTkFrame(frame)
-        box.pack(fill="x", pady=8)
+        box = ctk.CTkFrame(
+            frame,
+            fg_color=CARD_COLOR
+        )
+        box.pack(
+            fill="x",
+            pady=8
+        )
 
         ctk.CTkLabel(
             box,
-            text=f"{row[0]}   |   Target: {row[1]}"
-        ).pack(anchor="w", padx=15, pady=(10, 3))
+            text=f"{row[0]}   |   Target: {row[1]}",
+            text_color=TEXT_COLOR
+        ).pack(
+            anchor="w",
+            padx=15,
+            pady=(10, 3)
+        )
 
         bar = ctk.CTkProgressBar(box)
-        bar.pack(fill="x", padx=15, pady=5)
+
+        bar.pack(
+            fill="x",
+            padx=15,
+            pady=5
+        )
+
         bar.set(row[2] / 100)
 
         ctk.CTkLabel(
             box,
-            text=f"{round(row[2])}%"
-        ).pack(anchor="w", padx=15, pady=(0, 10))
+            text=f"{round(row[2])}%",
+            text_color=TEXT_COLOR
+        ).pack(
+            anchor="w",
+            padx=15,
+            pady=(0, 10)
+        )
 
 
 # ---------------- PROFILE ----------------
 
 def profile():
+
     clear_page()
 
     page_title(
@@ -1128,8 +1308,16 @@ def profile():
         "Your athlete information and erg PBs"
     )
 
-    frame = ctk.CTkScrollableFrame(content)
-    frame.pack(fill="both", expand=True, padx=40, pady=10)
+    frame = ctk.CTkScrollableFrame(
+        content,
+        fg_color=BG_COLOR
+    )
+    frame.pack(
+        fill="both",
+        expand=True,
+        padx=40,
+        pady=10
+    )
 
     cursor.execute("""
     SELECT name, age, club, boat_class, weight,
@@ -1154,13 +1342,18 @@ def profile():
 
         ctk.CTkLabel(
             frame,
-            text=labels[i]
-        ).pack(anchor="w", pady=(8, 3))
+            text=labels[i],
+            text_color=TEXT_COLOR
+        ).pack(
+            anchor="w",
+            pady=(8, 3)
+        )
 
         entry = ctk.CTkEntry(
             frame,
             width=350
         )
+
         entry.pack(anchor="w")
 
         if data[i]:
@@ -1171,8 +1364,12 @@ def profile():
     ctk.CTkLabel(
         frame,
         text="Erg Personal Bests",
+        text_color=TEXT_COLOR,
         font=ctk.CTkFont(size=21, weight="bold")
-    ).pack(anchor="w", pady=(30, 15))
+    ).pack(
+        anchor="w",
+        pady=(30, 15)
+    )
 
     pb_labels = [
         "500m PB",
@@ -1188,13 +1385,18 @@ def profile():
 
         ctk.CTkLabel(
             frame,
-            text=pb_labels[i]
-        ).pack(anchor="w", pady=(5, 3))
+            text=pb_labels[i],
+            text_color=TEXT_COLOR
+        ).pack(
+            anchor="w",
+            pady=(5, 3)
+        )
 
         entry = ctk.CTkEntry(
             frame,
             width=350
         )
+
         entry.pack(anchor="w")
 
         if data[i + 5]:
@@ -1231,6 +1433,7 @@ def profile():
         ))
 
         db.commit()
+
         message("Profile saved!")
 
     ctk.CTkButton(
@@ -1239,7 +1442,10 @@ def profile():
         width=250,
         height=45,
         command=save_profile
-    ).pack(anchor="w", pady=30)
+    ).pack(
+        anchor="w",
+        pady=30
+    )
 
 
 def get_pb():
@@ -1259,6 +1465,7 @@ def get_pb():
 # ---------------- SETTINGS ----------------
 
 def settings():
+
     clear_page()
 
     page_title(
@@ -1266,26 +1473,41 @@ def settings():
         "Change how the app works"
     )
 
-    frame = ctk.CTkFrame(content)
-    frame.pack(fill="both", expand=True, padx=40, pady=10)
+    frame = ctk.CTkFrame(
+        content,
+        fg_color=CARD_COLOR
+    )
+    frame.pack(
+        fill="both",
+        expand=True,
+        padx=40,
+        pady=10
+    )
 
     ctk.CTkLabel(
         frame,
         text="Appearance",
+        text_color=TEXT_COLOR,
         font=ctk.CTkFont(size=20, weight="bold")
     ).pack(pady=(30, 10))
 
     appearance = ctk.CTkOptionMenu(
         frame,
-        values=["Dark", "Light", "System"],
+        values=[
+            "Dark",
+            "Light",
+            "System"
+        ],
         command=change_appearance
     )
+
     appearance.pack()
     appearance.set("Dark")
 
     ctk.CTkLabel(
         frame,
         text="Notifications",
+        text_color=TEXT_COLOR,
         font=ctk.CTkFont(size=20, weight="bold")
     ).pack(pady=(40, 10))
 
@@ -1301,7 +1523,10 @@ def settings():
 
 
 def change_appearance(choice):
-    ctk.set_appearance_mode(choice.lower())
+
+    ctk.set_appearance_mode(
+        choice.lower()
+    )
 
 
 # ---------------- SIDEBAR ----------------
@@ -1309,6 +1534,7 @@ def change_appearance(choice):
 ctk.CTkLabel(
     sidebar,
     text="ROWING\nPERFORMANCE",
+    text_color=TEXT_COLOR,
     font=ctk.CTkFont(size=22, weight="bold")
 ).pack(pady=30)
 
@@ -1323,6 +1549,7 @@ buttons = [
     ("⚙  Settings", settings)
 ]
 
+
 for text, command in buttons:
 
     ctk.CTkButton(
@@ -1331,8 +1558,14 @@ for text, command in buttons:
         command=command,
         height=45,
         fg_color="transparent",
+        text_color=TEXT_COLOR,
+        hover_color=("#D5DAE0", "#252A30"),
         anchor="w"
-    ).pack(fill="x", padx=15, pady=4)
+    ).pack(
+        fill="x",
+        padx=15,
+        pady=4
+    )
 
 
 # Start on the home screen
