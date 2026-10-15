@@ -5,8 +5,13 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 
-# Dark mode for now
+# Default appearance; users can switch this in Settings.
+appearance_choice = "Dark"
 ctk.set_appearance_mode("dark")
+CURRENT_MAX_MS = 3.0
+MAX_DISTANCE_KM = 200.0
+MIN_SPLIT_SECONDS = 60.0
+MAX_SPLIT_SECONDS = 600.0
 ctk.set_default_color_theme("blue")
 
 
@@ -21,7 +26,7 @@ SECONDARY_TEXT = ("#555555", "#B8BEC7")
 app = ctk.CTk()
 app.title("Rowing Performance")
 app.geometry("1200x750")
-app.minsize(1000, 650)
+app.minsize(760, 520)
 
 
 # ---------------- DATABASE ----------------
@@ -184,35 +189,47 @@ def message(text):
 
 # ---------------- TIDE CALCULATION ----------------
 
-def calculate_adjusted_split(split_text, current, direction):
-
+def parse_split(split_text):
+    """Parse an mm:ss split and return seconds; reject malformed/unrealistic values."""
+    text = (split_text or "").strip()
+    parts = text.split(":")
+    if len(parts) != 2 or not all(part.strip() for part in parts):
+        raise ValueError("Enter split as minutes:seconds, for example 2:10.")
     try:
-
-        parts = split_text.split(":")
-
-        if len(parts) != 2:
-            return "--"
-
-        minutes = float(parts[0])
+        minutes = int(parts[0])
         seconds = float(parts[1])
+    except ValueError:
+        raise ValueError("Split must contain numbers in mm:ss format.")
+    if minutes < 0 or not 0 <= seconds < 60:
+        raise ValueError("Split seconds must be from 0 to under 60.")
+    total = minutes * 60 + seconds
+    if not MIN_SPLIT_SECONDS <= total <= MAX_SPLIT_SECONDS:
+        raise ValueError("Split must be between 1:00 and 10:00 per 500 m.")
+    return total
 
-        split_seconds = minutes * 60 + seconds
 
-        # Simple estimate
-        adjustment = current * 0.05
-
-        if direction == "Helping":
-            adjusted_seconds = split_seconds * (1 + adjustment)
-
+def calculate_adjusted_split(split_text, current, direction):
+    """Return an explicitly approximate current-adjusted split, or -- if invalid."""
+    try:
+        split_seconds = parse_split(split_text)
+        current = float(current)
+        if not 0 <= current <= CURRENT_MAX_MS:
+            return "--"
+        if direction == "No current" or current == 0:
+            adjusted_seconds = split_seconds
         else:
-            adjusted_seconds = split_seconds * (1 - adjustment)
-
+            # Simplified estimate only; this is not a validated hydrodynamic model.
+            adjustment = min(current * 0.05, 0.15)
+            if direction == "Helping":
+                adjusted_seconds = split_seconds * (1 - adjustment)
+            elif direction == "Against":
+                adjusted_seconds = split_seconds * (1 + adjustment)
+            else:
+                return "--"
         adjusted_minutes = int(adjusted_seconds // 60)
         adjusted_remaining = adjusted_seconds % 60
-
         return f"{adjusted_minutes}:{adjusted_remaining:04.1f}"
-
-    except:
+    except (ValueError, TypeError, OverflowError):
         return "--"
 
 
@@ -502,9 +519,15 @@ def training():
     def show_adjusted():
 
         try:
-            current_value = float(current.get())
+            current_value = float(current.get()) if current.get().strip() else 0.0
+            if not 0 <= current_value <= CURRENT_MAX_MS:
+                raise ValueError
         except ValueError:
-            current_value = 0
+            message(f"Current must be between 0 and {CURRENT_MAX_MS:g} m/s.")
+            return
+        if not split.get().strip():
+            adjusted_label.configure(text="Adjusted split: enter a split first")
+            return
 
         adjusted = calculate_adjusted_split(
             split.get(),
@@ -578,23 +601,49 @@ def training():
 
     def save_training():
 
-        try:
-            km = float(distance.get())
-        except ValueError:
-            message("Enter a number for distance.")
+        if not session_type.get().strip() or session_type.get() not in ["Water", "Erg", "Gym", "Running", "Cross Training"]:
+            message("Choose a session type.")
             return
-
         try:
-            current_value = float(current.get()) if current.get() else 0
+            km = float(distance.get().strip())
+            if not 0 < km <= MAX_DISTANCE_KM:
+                raise ValueError
         except ValueError:
-            message("Current needs to be a number.")
+            message(f"Distance must be a number greater than 0 and no more than {MAX_DISTANCE_KM:g} km.")
             return
-
-        adjusted = calculate_adjusted_split(
-            split.get(),
-            current_value,
-            direction.get()
-        )
+        try:
+            current_value = float(current.get().strip()) if current.get().strip() else 0.0
+            if not 0 <= current_value <= CURRENT_MAX_MS:
+                raise ValueError
+        except ValueError:
+            message(f"Current must be blank or between 0 and {CURRENT_MAX_MS:g} m/s.")
+            return
+        if not split.get().strip():
+            message("Enter an average split in mm:ss format, for example 2:10.")
+            return
+        try:
+            parse_split(split.get())
+        except ValueError as exc:
+            message(str(exc))
+            return
+        def optional_int(entry, label, minimum, maximum):
+            raw = entry.get().strip()
+            if not raw:
+                return 0
+            try:
+                value = int(raw)
+            except ValueError:
+                raise ValueError(f"{label} must be a whole number.")
+            if not minimum <= value <= maximum:
+                raise ValueError(f"{label} must be between {minimum} and {maximum}.")
+            return value
+        try:
+            rate_value = optional_int(stroke_rate, "Stroke rate", 1, 60)
+            hr_value = optional_int(heart_rate, "Heart rate", 30, 250)
+        except ValueError as exc:
+            message(str(exc))
+            return
+        adjusted = calculate_adjusted_split(split.get(), current_value, direction.get())
 
         cursor.execute("""
         INSERT INTO training
@@ -608,8 +657,8 @@ def training():
             km,
             time_entry.get(),
             split.get(),
-            stroke_rate.get() or 0,
-            heart_rate.get() or 0,
+            rate_value,
+            hr_value,
             boat_class.get(),
             notes.get("1.0", "end").strip(),
             current_value,
@@ -699,7 +748,7 @@ def questionnaire():
         width=350
     )
     before.pack()
-    before.set("Average")
+    before.set("Select an answer")
 
     ctk.CTkLabel(
         frame,
@@ -719,7 +768,7 @@ def questionnaire():
         width=350
     )
     after.pack()
-    after.set("Average")
+    after.set("Select an answer")
 
     ctk.CTkLabel(
         frame,
@@ -738,7 +787,7 @@ def questionnaire():
         width=350
     )
     pain.pack()
-    pain.set("No")
+    pain.set("Select an answer")
 
     ctk.CTkLabel(
         frame,
@@ -754,6 +803,10 @@ def questionnaire():
     comments.pack()
 
     def save_questionnaire():
+
+        if before.get() not in ["Very good", "Good", "Average", "Tired", "Very tired"] or after.get() not in ["Very good", "Good", "Average", "Tired", "Very tired"] or pain.get() not in ["No", "Minor", "Moderate", "Severe"]:
+            message("Please answer the before, after, and pain questions before saving.")
+            return
 
         cursor.execute("""
         INSERT INTO questionnaire
@@ -1204,10 +1257,24 @@ def goals():
 
     def save_goal():
 
-        if not target.get():
-
+        target_text = target.get().strip()
+        if not target_text:
             message("Enter a target first.")
             return
+        if goal_type.get() in ["2k Erg", "5k Erg", "On-Water Split"]:
+            try:
+                parse_split(target_text)
+            except ValueError:
+                message("Enter a realistic target time in mm:ss format, for example 6:30 or 2:10.")
+                return
+        else:
+            try:
+                target_number = float(target_text)
+                if not 0 < target_number <= 100000:
+                    raise ValueError
+            except ValueError:
+                message("Target must be a positive number no greater than 100000.")
+                return
 
         cursor.execute("""
         INSERT INTO goals
@@ -1215,8 +1282,8 @@ def goals():
         VALUES (?, ?, ?)
         """, (
             goal_type.get(),
-            target.get(),
-            goal_progress.get()
+            target_text,
+            max(0, min(100, goal_progress.get()))
         ))
 
         db.commit()
@@ -1284,11 +1351,12 @@ def goals():
             pady=5
         )
 
-        bar.set(row[2] / 100)
+        safe_progress = max(0.0, min(100.0, float(row[2] or 0)))
+        bar.set(safe_progress / 100)
 
         ctk.CTkLabel(
             box,
-            text=f"{round(row[2])}%",
+            text=f"{round(safe_progress)}%",
             text_color=TEXT_COLOR
         ).pack(
             anchor="w",
@@ -1405,6 +1473,29 @@ def profile():
         pb_entries.append(entry)
 
     def save_profile():
+        name_value = entries[0].get().strip()
+        if not name_value:
+            message("Enter a name before saving your profile.")
+            return
+        weight_text = entries[4].get().strip()
+        if weight_text:
+            try:
+                weight_value = float(weight_text)
+                if not 20 <= weight_value <= 250:
+                    raise ValueError
+            except ValueError:
+                message("Weight must be a number between 20 and 250 kg.")
+                return
+        else:
+            weight_value = ""
+        for label, entry in zip(pb_labels, pb_entries):
+            value = entry.get().strip()
+            if value:
+                try:
+                    parse_split(value)
+                except ValueError:
+                    message(f"{label} must be entered as mm:ss, for example 6:30.")
+                    return
 
         cursor.execute("""
         UPDATE profile
@@ -1420,11 +1511,11 @@ def profile():
             pb_6000 = ?
         WHERE id = 1
         """, (
-            entries[0].get(),
-            entries[1].get(),
-            entries[2].get(),
-            entries[3].get(),
-            entries[4].get(),
+            name_value,
+            entries[1].get().strip(),
+            entries[2].get().strip(),
+            entries[3].get().strip(),
+            str(weight_value) if weight_text else "",
             pb_entries[0].get(),
             pb_entries[1].get(),
             pb_entries[2].get(),
@@ -1502,7 +1593,7 @@ def settings():
     )
 
     appearance.pack()
-    appearance.set("Dark")
+    appearance.set(appearance_choice)
 
     ctk.CTkLabel(
         frame,
@@ -1523,10 +1614,9 @@ def settings():
 
 
 def change_appearance(choice):
-
-    ctk.set_appearance_mode(
-        choice.lower()
-    )
+    global appearance_choice
+    appearance_choice = choice
+    ctk.set_appearance_mode(choice.lower())
 
 
 # ---------------- SIDEBAR ----------------
@@ -1567,6 +1657,18 @@ for text, command in buttons:
         pady=4
     )
 
+
+# Warn before closing so unsaved form entries are not lost accidentally.
+def confirm_close():
+    from tkinter import messagebox
+    if messagebox.askyesno("Close Rowing Performance", "Close the app? Any information not yet saved will be lost."):
+        try:
+            db.commit()
+            db.close()
+        finally:
+            app.destroy()
+
+app.protocol("WM_DELETE_WINDOW", confirm_close)
 
 # Start on the home screen
 home()
